@@ -1,1 +1,3 @@
 # wbsktxprtr
+
+```python main.py```
