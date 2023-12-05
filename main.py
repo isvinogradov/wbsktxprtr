@@ -1,6 +1,9 @@
 import asyncio
 import logging
-from time import perf_counter
+from time import (
+    perf_counter,
+    sleep,
+)
 from typing import Iterable
 
 import websockets
@@ -17,7 +20,7 @@ from prometheus_client.registry import Collector
 logging.basicConfig(level=logging.INFO)
 
 URI_LIST = ['ws://127.0.0.1:8001']
-SLEEP_DELAY = 10
+SLEEP_DELAY = 2
 PROMETHEUS_PORT = 9000
 PROMETHEUS_ADDR = '127.0.0.1'
 
@@ -48,21 +51,23 @@ async def get_probe_results() -> list[ProbeResult]:
 
 class ResultCollector(Collector):
     def collect(self) -> Iterable[Metric]:
-        for result in asyncio.run(get_probe_results()):
-            logging.info(result)
-            yield GaugeMetricFamily(
-                'websocket_probe_success',
-                '1 if websocket is up, 0 otherwise',
-                value=int(result.is_up),
-                # labels=[result.uri]
-            )
-            yield GaugeMetricFamily(
-                'websocket_probe_latency',
-                'connection latency',
-                value=result.latency,
-                unit='milliseconds',
-                # labels=[result.uri]
-            )
+        while True:
+            for result in asyncio.run(get_probe_results()):
+                logging.info(result)
+                yield GaugeMetricFamily(
+                    'websocket_probe_success',
+                    '1 if websocket is up, 0 otherwise',
+                    value=int(result.is_up),
+                    # labels=[result.uri]
+                )
+                yield GaugeMetricFamily(
+                    'websocket_probe_latency',
+                    'connection latency',
+                    value=result.latency,
+                    unit='milliseconds',
+                    # labels=[result.uri]
+                )
+            sleep(SLEEP_DELAY)
 
 
 if __name__ == '__main__':
